@@ -3,3 +3,9 @@
 name = "rs-metrics"
 version = "0.0.1"
 authors = ["Richo Healey <richo@psych0tik.net>"]
+
+[dependencies]
+
+regex = "0.1.21"
+regex_macros = "0.1.13"
+getopts = "0.2.5"
