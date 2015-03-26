@@ -6,7 +6,11 @@ extern crate getopts;
 use getopts::Options;
 use std::env;
 use regex::Regex;
+use std::net::UdpSocket;
 
+use std::sync::mpsc::channel;
+use std::thread;
+use std::io::Error;
 
 static STATSRE: Regex = regex!("^(?P<name>[^:]+):(?P<value>[^|]+)\\|(?P<type>.*)$");
 
@@ -18,7 +22,7 @@ struct Metric<'a> {
 struct Config {
     listen: String,
     send: String,
-    relay: String,
+    relay: Option<String>,
     key: String,
 }
 
@@ -57,7 +61,7 @@ impl Config {
 
         let listen = extract!("l", matches, opts);
         let send = extract!("s", matches, opts);
-        let relay = extract!("r", matches, opts);
+        let relay = matches.opt_str("r");
         let key = extract!("k", matches, opts);
 
         Ok(Config {
@@ -69,11 +73,21 @@ impl Config {
     }
 }
 
+fn process(cfg: Config) -> Result<(), Error> {
+    // let (pkt_tx, pkt_rx) = channel();
+    // let (metric_tx, metric_rx) = channel();
 
+    let socket = try!(UdpSocket::bind(&cfg.listen[..]));
+
+    Ok(())
+}
 
 fn main() {
     match Config::parse(env::args().collect()) {
-        Ok(opts) => {
+        Ok(cfg) => {
+            if let Err(err) = process(cfg) {
+                panic!(err.to_string());
+            }
         },
         Err(opts) => {
             print_usage("rs-metrics", opts);
