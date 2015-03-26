@@ -11,6 +11,8 @@ use std::net::UdpSocket;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::io::Error;
+use std::net::SocketAddr;
+use std::str::FromStr;
 
 static STATSRE: Regex = regex!("^(?P<name>[^:]+):(?P<value>[^|]+)\\|(?P<type>.*)$");
 
@@ -74,11 +76,24 @@ impl Config {
 }
 
 fn process(cfg: Config) -> Result<(), Error> {
-    // let (pkt_tx, pkt_rx) = channel();
-    // let (metric_tx, metric_rx) = channel();
-
+    let mut buf = [0; 1024];
     let socket = try!(UdpSocket::bind(&cfg.listen[..]));
 
+    let relay: Option<SocketAddr> = match cfg.relay {
+        Some(r) => Some(SocketAddr::from_str(&r).ok().unwrap()),
+        None => None,
+    };
+
+    let send: SocketAddr = SocketAddr::from_str(&cfg.send).ok().unwrap();
+
+    loop {
+        let (amt, src) = try!(socket.recv_from(&mut buf));
+
+        socket.send_to(&buf[..amt], &send);
+        if let Some(rel) = relay {
+            socket.send_to(&buf[..amt], &rel);
+        }
+    }
     Ok(())
 }
 
